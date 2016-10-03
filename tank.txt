@@ -1,0 +1,965 @@
+﻿--
+-- High Distinction Assignment, Spring 2016
+
+-- World of Tanks - Tank Specification DataBase - Tier VII Tanks
+-- Inspired by Website: http://worldoftanks.asia/en/tankopedia/#wot&w_m=tanks
+
+
+/*
+ After playing this game for a while, i realize the biggest challenge is to choose a 'Tech Tree' from a nation to fit in your play style. 
+ At Tier VII (Level 7), the playstyle of each 'Tech Tree' starts to become unique and obvious. 
+ Therefor, only Tier 7 tanks data are inserted in this database for demonstration purpose.
+ Hence, the architect of this database will help better compare the specification of tanks from different nations with different attributes
+ and quickly give player an insight of uniqueness of a certain tank.
+*/
+
+-- Designed by Tianpeng Gou (12680373)
+-- 1st Edition, 2016
+
+DROP TABLE Nation        CASCADE;
+DROP TABLE Tank          CASCADE;
+DROP TABLE Gun           CASCADE;
+DROP TABLE Ammo          CASCADE;
+DROP TABLE Fitting       CASCADE;
+DROP TABLE Firing        CASCADE;
+
+
+
+
+CREATE TABLE Nation
+(
+	nationCode  CHAR(2)   NOT NULL, 
+	nationName  TEXT   NOT NULL,
+	
+	CONSTRAINT NationPK PRIMARY KEY (nationCode),
+		
+		CONSTRAINT di_table_nation_nationcode CHECK (nationCode IN (
+			'RU', 'DE', 'US', 'FR', 'GB', 'CN', 'JP', 'CZ'
+		)),
+		CONSTRAINT di_table_nation_nationName CHECK (nationName IN (
+			'Russia', 'Germany', 'USA', 'France', 'United Kingdom', 'China',
+			'Japan', 'Czech'
+		))
+);
+
+
+CREATE TABLE Tank
+(
+	nationCode     CHAR(2)   NOT NULL,
+	tankName       TEXT   NOT NULL,
+	tankType       TEXT   NOT NULL, 
+	hitPoint          INTEGER   NOT NULL,  
+	maxWeight         FLOAT     NOT NULL, -- tone
+	maxEnginePower    INTEGER   NOT NULL, -- hp
+	maxSpeed	      INTEGER   NOT NULL, -- km/h
+	maxTraverseSpeed  FLOAT     NOT NULL, -- deg/s
+	
+	CONSTRAINT TankPK PRIMARY KEY (nationCode, tankName),
+	CONSTRAINT TankFK FOREIGN KEY (nationCode) 
+										REFERENCES Nation ON DELETE RESTRICT,
+	
+		CONSTRAINT di_table_tank_tankname CHECK (tankName IN (
+			'LTTB', 'A-44', 'KV-13', 'T-43', 'IS', 'KV-3',
+			'SU-152', 'SU-100M1', 'SU-14-1', 'S-51',
+			'SPIC', 'Panther', 'VK3002D', 'Tiger I', 'Tiger P',
+			'Sturer Emil', 'Jagdpanther', 'GW Panther', 
+			'M41 Bulldog', 'T71', 'T20', 'T29', 'T25/2', 'T25 AT', 'M12', 
+			'AMX 13 75', 'AMX M4', 'AMX AC', 'Lorraine 155', 
+			'Comet', 'Black Prince', 'Challenger', 'AT 7', 'Crusader SP', 
+			'WZ-131', 'T-34-1', 'IS-2', 'Type 5',
+			'O-Ni', 
+			'T-34/100')
+			),
+		
+		CONSTRAINT di_table_tank_tanktype CHECK (tankType IN (
+			'Light', 'Medium', 'Heavy', 'Destroyer', 'SPG'
+		)),
+		
+		CONSTRAINT di_table_tank_hitpoint CHECK (
+			(hitPoint >= 340) AND (hitPoint <= 1550)
+		),
+		
+		CONSTRAINT di_table_tank_netWeight_ton CHECK (
+			(maxWeight >= 10.0) AND (maxWeight <= 120.0) 
+		),
+		
+		CONSTRAINT di_table_tank_maxEnginePower_hp CHECK (
+			(maxEnginePower >= 100) AND (maxEnginePower <= 1300) 
+		),
+		
+		CONSTRAINT di_table_tank_maxSpeed_kmh CHECK (
+			(maxSpeed >= 10) AND (maxSpeed <= 100) 
+		),
+		
+		CONSTRAINT di_table_tank_maxTraverseSpeed_degs CHECK (
+			(maxTraverseSpeed >= 10.0) AND (maxTraverseSpeed <= 60.0) 
+		)
+		
+);
+ 
+
+CREATE TABLE Gun	
+(
+	gunNameCaliber    TEXT   NOT NULL,
+	caliber      INTEGER  NOT NULL, -- mm
+	weight       FLOAT    NOT NULL, -- tone
+	accuracy     FLOAT    NOT NULL, -- ratio
+	aimTime      FLOAT    NOT NULL, -- s
+	gunType      TEXT     NOT NULL, 
+	
+	CONSTRAINT GunPK PRIMARY KEY (gunNameCaliber),
+	
+	
+		CONSTRAINT di_table_gun_caliber CHECK (
+			(caliber >= 50) AND (caliber <= 210) 
+		),
+		
+		CONSTRAINT di_table_gun_weight CHECK (
+			(weight >= 0.0) AND (weight <= 10.0) 
+		),
+		
+		CONSTRAINT di_table_gun_accuracy CHECK (
+			(accuracy >= 0.25) AND (accuracy <= 0.90) 
+		),
+		
+		CONSTRAINT di_table_gun_aimtime CHECK (
+			(aimTime >= 0.0) AND (aimTime <= 10.0)  
+		),
+		CONSTRAINT di_table_gun_guntype CHECK ( gunType IN (
+			'manual', 'auto'
+		))
+);
+
+
+CREATE TABLE Ammo
+(
+	ammoName   TEXT   NOT NULL,
+	ammoType   TEXT   NOT NULL,
+	
+	CONSTRAINT AmmoPK PRIMARY KEY (ammoName),
+	
+	
+		CONSTRAINT di_table_ammo_ammoType CHECK (ammoType IN (
+			'AP', 'APCR', 'HEAT', 'HE'
+		))
+	
+);
+
+
+CREATE TABLE Fitting
+(
+	nationCode        CHAR(2)   NOT NULL,
+	tankName          TEXT   NOT NULL,
+	gunNameCaliber    TEXT   NOT NULL, -- mm
+	reloadTime        FLOAT  NOT NULL, -- s
+	depressionAngle   FLOAT  NOT NULL, -- deg
+	elevationAngle    FLOAT  NOT NULL, -- deg
+	
+	CONSTRAINT FittingPK PRIMARY KEY (nationCode, tankName, gunNameCaliber),
+	
+	CONSTRAINT Fitting_TankFK FOREIGN KEY (nationCode, tankName)
+														REFERENCES Tank ON DELETE CASCADE,
+	
+	CONSTRAINT Fitting_GunFK FOREIGN KEY (gunNameCaliber)
+														REFERENCES Gun ON DELETE CASCADE, 
+	
+		CONSTRAINT di_table_fitting_reloadtime CHECK (
+			(reloadTime >= 0.0) AND (reloadTime <= 60) -- Modify later
+		),
+		
+		CONSTRAINT di_table_fitting_depressionangle CHECK (
+			(depressionAngle >= -20.0) AND (depressionAngle <= 0.0) -- Modify later
+		),
+		
+		CONSTRAINT di_table_fitting_elevationangle CHECK (
+			(elevationAngle >= 0.0) AND (elevationAngle <= 60.0) -- Modify later
+		)
+);
+
+
+CREATE TABLE Firing
+(
+	gunNameCaliber  TEXT      NOT NULL, 
+	ammoName        TEXT      NOT NULL,
+	penetration     INTEGER   NOT NULL, -- mm
+	damage          INTEGER   NOT NULL, 
+	
+	CONSTRAINT FiringPK PRIMARY KEY (gunNameCaliber, ammoName),
+	
+	CONSTRAINT Firing_GunFK FOREIGN KEY (gunNameCaliber) 
+												REFERENCES Gun ON DELETE CASCADE,
+	
+	CONSTRAINT Firing_AmmoFK FOREIGN KEY (ammoName)
+												REFERENCES Ammo ON DELETE CASCADE, 
+	
+		CONSTRAINT di_table_firing_penetration CHECK (
+			(penetration >= 0) AND (penetration <= 300)  --Modify later
+		),
+		
+		CONSTRAINT di_table_firing_damage CHECK (
+			(damage >= 0) AND (damage <= 2000) --Modify later
+		)
+);
+
+
+
+
+-- Nation
+INSERT INTO Nation VALUES ('RU', 'Russia');
+INSERT INTO Nation VALUES ('DE', 'Germany');
+INSERT INTO Nation VALUES ('US', 'USA');
+INSERT INTO Nation VALUES ('FR', 'France');
+INSERT INTO Nation VALUES ('GB', 'United Kingdom');
+INSERT INTO Nation VALUES ('CN', 'China');
+INSERT INTO Nation VALUES ('JP', 'Japan');
+INSERT INTO Nation VALUES ('CZ', 'Czech');
+
+
+--Tank
+-- 
+--Tank-Russia
+INSERT INTO Tank VALUES ('RU', 'LTTB', 'Light', 950, 24.0, 700, 68, 48);
+INSERT INTO Tank VALUES ('RU', 'A-44', 'Medium', 1100, 41.0, 600, 59, 44);
+INSERT INTO Tank VALUES ('RU', 'KV-13', 'Medium', 1120, 36.9, 600, 50, 40);
+INSERT INTO Tank VALUES ('RU', 'T-43', 'Medium', 1100, 37.3, 600, 51, 38);
+INSERT INTO Tank VALUES ('RU', 'IS', 'Heavy', 1230, 48.4, 700, 34, 35);
+INSERT INTO Tank VALUES ('RU', 'KV-3', 'Heavy', 1400, 71.8, 750, 32, 18);
+INSERT INTO Tank VALUES ('RU', 'SU-152', 'Destroyer', 870, 48.4, 600, 43, 23);
+INSERT INTO Tank VALUES ('RU', 'SU-100M1', 'Destroyer', 830, 34.0, 600, 50, 34);
+INSERT INTO Tank VALUES ('RU', 'SU-14-1', 'SPG', 350, 52.7, 700, 30, 16);
+INSERT INTO Tank VALUES ('RU', 'S-51', 'SPG', 350, 52.5, 600, 30, 20);
+--Tank-Germany
+INSERT INTO Tank VALUES ('DE', 'SPIC', 'Light', 880, 10.9, 195, 58, 44);
+INSERT INTO Tank VALUES ('DE', 'Panther', 'Medium', 1300, 48.0, 700, 55, 32);
+INSERT INTO Tank VALUES ('DE', 'VK3002D', 'Medium', 1250, 43.0, 720, 56, 43);
+INSERT INTO Tank VALUES ('DE', 'Tiger I', 'Heavy', 1500, 61.0, 700, 40, 26);
+INSERT INTO Tank VALUES ('DE', 'Tiger P', 'Heavy', 1450, 65.2, 670, 35, 22);
+INSERT INTO Tank VALUES ('DE', 'Sturer Emil', 'Destroyer', 850, 38.5, 310, 25, 36);
+INSERT INTO Tank VALUES ('DE', 'Jagdpanther', 'Destroyer', 850, 49.0, 700, 55, 32);
+INSERT INTO Tank VALUES ('DE', 'GW Panther', 'SPG', 360, 32.0, 250, 46, 26);
+--Tank-USA
+INSERT INTO Tank VALUES ('US', 'T71', 'Light', 840, 20.0, 400, 64.4, 56);
+INSERT INTO Tank VALUES ('US', 'M41 Bulldog', 'Light', 910, 26.0, 550, 72, 56);
+INSERT INTO Tank VALUES ('US', 'T20', 'Medium', 1100, 34.0, 560, 56, 37);
+INSERT INTO Tank VALUES ('US', 'T29', 'Heavy', 1250, 66.8, 800, 35, 25);
+INSERT INTO Tank VALUES ('US', 'T25 AT', 'Destroyer', 840, 43.8, 704, 56, 30);
+INSERT INTO Tank VALUES ('US', 'T25/2', 'Destroyer', 850, 45.8, 704, 56, 30);
+INSERT INTO Tank VALUES ('US', 'M12', 'SPG', 350, 29.5, 500, 39, 20);
+--Tank-France
+INSERT INTO Tank VALUES ('FR', 'AMX 13 75', 'Light', 900, 16.35, 300, 61, 42);
+INSERT INTO Tank VALUES ('FR', 'AMX M4', 'Heavy', 1350, 60.0, 850, 35, 24);
+INSERT INTO Tank VALUES ('FR', 'AMX AC', 'Destroyer', 820, 63.0, 850, 50, 26);
+INSERT INTO Tank VALUES ('FR', 'Lorraine 155', 'SPG', 340, 32.0, 700, 60, 30);
+--Tank-United Kingdom
+INSERT INTO Tank VALUES ('GB', 'Comet', 'Medium', 1150, 34.0, 650, 52, 36);
+INSERT INTO Tank VALUES ('GB', 'Black Prince', 'Heavy', 1450, 53.0, 600, 20, 20);
+INSERT INTO Tank VALUES ('GB', 'AT 7', 'Destroyer', 1250, 48.0, 500, 20, 22);
+INSERT INTO Tank VALUES ('GB', 'Challenger', 'Destroyer', 900, 36.8, 650, 52, 30);
+INSERT INTO Tank VALUES ('GB', 'Crusader SP', 'SPG', 350, 21.0, 410, 14, 32);
+--Tank-China
+INSERT INTO Tank VALUES ('CN', 'WZ-131', 'Light', 900, 24.0, 520, 60, 54);
+INSERT INTO Tank VALUES ('CN', 'T-34-1', 'Medium', 1050, 35.0, 520, 50, 42);
+INSERT INTO Tank VALUES ('CN', 'IS-2', 'Heavy', 1280, 49.0, 580, 37, 38);
+--Tank-Japan
+INSERT INTO Tank VALUES ('JP', 'Type 5', 'Medium', 1250, 44.8, 550, 42, 34);
+INSERT INTO Tank VALUES ('JP', 'O-Ni', 'Heavy', 1550, 105.5, 1200, 25, 18);
+--Tank-Czech
+INSERT INTO Tank VALUES ('CZ', 'T-34/100', 'Medium', 1100, 37.0, 520, 54, 38);
+
+
+
+
+--Gun
+--
+-- Gun-Russia
+INSERT INTO Gun VALUES('ZiS-S-53 85mm', 85, 1.55, 0.42, 2.5, 'manual');
+INSERT INTO Gun VALUES('D5T-85BM 85mm', 85, 1.85, 0.37, 2.1, 'manual');
+INSERT INTO Gun VALUES('D-10-85 85mm', 85, 2.1, 0.36, 2.1, 'manual');
+INSERT INTO Gun VALUES('F-34 76mm', 76, 1.155, 0.46, 1.9, 'manual');
+INSERT INTO Gun VALUES('ZiS-4 57mm', 57, 0.74, 0.34, 1.9, 'manual');
+INSERT INTO Gun VALUES('S-54 76mm', 76, 1.39, 0.41, 1.9, 'manual');
+INSERT INTO Gun VALUES('ZiS-6 107mm', 107, 2.4, 0.45, 3.4, 'manual');
+INSERT INTO Gun VALUES('ZiS-5 76mm', 76, 1.155, 0.46, 2.3, 'manual');
+INSERT INTO Gun VALUES('D-5T 85mm', 85, 1.5, 0.46, 2.9, 'manual');
+INSERT INTO Gun VALUES('U-11 122mm', 122, 1.6, 0.57, 2.9, 'manual');
+INSERT INTO Gun VALUES('D10T 100mm', 100, 2.257, 0.38, 2.7, 'manual');
+INSERT INTO Gun VALUES('D-2-5T 122mm', 122, 2.6, 0.46, 3.4, 'manual');
+INSERT INTO Gun VALUES('D-25T 122mm', 122, 2.59, 0.46, 3.4, 'manual');
+INSERT INTO Gun VALUES('F-30 85mm', 85, 1.55, 0.42, 3.4, 'manual');
+INSERT INTO Gun VALUES('S-31 85mm', 85, 1.5, 0.42, 3.4, 'manual');
+INSERT INTO Gun VALUES('ML-20 152mm', 152, 2.5, 0.5, 3.4, 'manual');
+INSERT INTO Gun VALUES('A-19 122mm', 122, 2.6, 0.43, 2.9, 'manual');
+INSERT INTO Gun VALUES('D-25S 122mm', 122, 2.59, 0.41, 2.9, 'manual');
+INSERT INTO Gun VALUES('D-10S 100mm', 100, 2.3, 0.37, 2.0, 'manual');
+INSERT INTO Gun VALUES('LB-1C 100mm', 100, 2.4, 0.33, 1.7, 'manual');
+INSERT INTO Gun VALUES('Howitzer ML-20 152mm', 152, 2.363, 0.8, 7, 'manual');
+INSERT INTO Gun VALUES('BR-2 152mm', 152, 5.72, 0.76, 7, 'manual');
+INSERT INTO Gun VALUES('B-4 203mm', 203, 5.2, 0.88, 8, 'manual');
+--Gun-Germany
+INSERT INTO Gun VALUES('D921-F1 90mm', 90, 0.39, 0.4, 2.5, 'manual');
+INSERT INTO Gun VALUES('Mecar 90mm', 90, 0.4, 0.36, 2.2, 'manual');
+INSERT INTO Gun VALUES('Mecar Mit 90mm', 90, 0.5, 0.38, 2.4, 'auto');
+INSERT INTO Gun VALUES('KwK 42 L/70 75mm', 75, 1.74, 0.35, 2.3, 'manual');
+INSERT INTO Gun VALUES('KwK L/100 75mm', 75, 2.1, 0.32, 2.5, 'manual');
+INSERT INTO Gun VALUES('KwK L/28 105mm', 105, 2.1, 0.55, 2.3, 'manual');
+INSERT INTO Gun VALUES('KwK 40 L/48 75mm', 75, 1.52, 0.39, 2.3, 'manual');
+INSERT INTO Gun VALUES('KwK 36 L/56 88mm', 88, 2.05, 0.38, 2.3, 'manual');
+INSERT INTO Gun VALUES('KwK 43 L/71 88mm', 88, 2.562, 0.34, 2.7, 'manual');
+INSERT INTO Gun VALUES('Kanone 18 105mm', 105, 1.89, 0.36, 2.3, 'manual');
+INSERT INTO Gun VALUES('Kanone 40 128mm', 128, 4.8, 0.36, 2.5, 'manual');
+INSERT INTO Gun VALUES('Pak 42 L/70 75mm', 75, 1.74, 0.33, 1.7, 'manual');
+INSERT INTO Gun VALUES('Pak L/56 88mm', 88, 2.05, 0.35, 1.7, 'manual');
+INSERT INTO Gun VALUES('Pak 43 L/71 88mm', 88, 2.562, 0.32, 2.3, 'manual');
+INSERT INTO Gun VALUES('Pak L/52 105mm', 105, 3.0, 0.34, 1.7, 'manual');
+INSERT INTO Gun VALUES('sFH 18 L/29.5 150mm', 150, 1.88, 0.74, 7, 'manual');
+INSERT INTO Gun VALUES('sFH 43 150mm', 150, 2.0, 0.7, 7, 'manual');
+--Gun-USA
+INSERT INTO Gun VALUES('M1A2 76mm', 76, 1.59, 0.4, 2.1, 'auto');
+INSERT INTO Gun VALUES('T185 76mm', 76, 0.646, 0.39, 2.1, 'auto');
+INSERT INTO Gun VALUES('T91 76mm', 76, 0.775, 0.38, 2.0, 'manual');
+INSERT INTO Gun VALUES('M32 76mm', 76, 0.775, 0.4, 2.0, 'manual');
+INSERT INTO Gun VALUES('M32 late 76mm', 76, 0.775, 0.38, 1.9, 'manual');
+INSERT INTO Gun VALUES('M1A1 76mm', 76, 1.567, 0.43, 2.3, 'manual');
+INSERT INTO Gun VALUES('M3 90mm', 90, 2.05, 0.38, 2.3, 'manual');
+INSERT INTO Gun VALUES('M4 105mm', 105, 2.6, 0.55, 2.3, 'manual');
+INSERT INTO Gun VALUES('T5E1 105mm', 105, 2.4, 0.42, 2.3, 'manual');
+INSERT INTO Gun VALUES('AT M3 90mm', 90, 2.05, 0.35, 1.7, 'manual');
+INSERT INTO Gun VALUES('AT T15E2 90mm', 90, 2.05, 0.35, 1.7, 'manual');
+INSERT INTO Gun VALUES('AT T5E1 105mm', 105, 2.4, 0.38, 1.7, 'manual');
+INSERT INTO Gun VALUES('M1918M1 155mm', 155, 3.953, 0.76, 7.0, 'manual');
+INSERT INTO Gun VALUES('M1 155mm', 155, 4.352, 0.72, 7.5, 'manual');
+--Gun-France
+INSERT INTO Gun VALUES('SA49 75mm', 75, 1.52, 0.42, 2.3, 'auto');
+INSERT INTO Gun VALUES('SA50 75mm', 75, 1.74, 0.36, 2.3, 'auto');
+INSERT INTO Gun VALUES('DCA 30 90mm', 90, 2.05, 0.4, 2.3, 'manual');
+INSERT INTO Gun VALUES('F3 90mm', 90, 2.2, 0.39, 2.3, 'manual');
+INSERT INTO Gun VALUES('Canon 13TR 105mm', 105, 2.4, 0.41, 2.9, 'manual');
+INSERT INTO Gun VALUES('DCA 45 90mm', 90, 2.75, 0.36, 2.9, 'manual');
+INSERT INTO Gun VALUES('SA47 100mm', 100, 3.0, 0.34, 2.9, 'manual');
+INSERT INTO Gun VALUES('de 33 155mm', 155, 2.675, 0.78, 7.0, 'manual');
+INSERT INTO Gun VALUES('mle 1950 155mm', 155, 2.675, 0.76, 6.5, 'manual');
+--Gun-United Kingdom
+INSERT INTO Gun VALUES('Mk V 75mm', 75, 0.5, 0.41, 1.9, 'manual');
+INSERT INTO Gun VALUES('Howitzer 94mm', 94, 0.393, 0.53, 2.3, 'manual');
+INSERT INTO Gun VALUES('Vickers HV 75mm', 75, 0.591, 0.36, 2.3, 'manual');
+INSERT INTO Gun VALUES('OQF MK II 77mm', 77, 0.681, 0.34, 2.3, 'manual');
+INSERT INTO Gun VALUES('OQF MK VII 77mm', 77, 0.826, 0.34, 2.3, 'manual');
+INSERT INTO Gun VALUES('QF AT MK V 57mm', 57, 0.45, 0.37, 1.7, 'auto');
+INSERT INTO Gun VALUES('OQF AT MK II 77mm', 77, 0.681, 0.32, 1.7, 'manual');
+INSERT INTO Gun VALUES('OQF AT MK VII 77mm', 77, 0.826, 0.32, 1.7, 'manual');
+INSERT INTO Gun VALUES('OQF AT Barrel 84mm', 84, 1.242, 0.31, 2.3, 'manual');
+INSERT INTO Gun VALUES('QF Howitzer 115mm', 115, 0.463, 0.72, 4.5, 'manual');
+INSERT INTO Gun VALUES('BL Gun 140mm', 140, 1.869, 0.72, 6.5, 'manual');
+--Gun-China
+INSERT INTO Gun VALUES('54-76TG 76mm', 76, 1.0, 0.36, 2.3, 'auto');
+INSERT INTO Gun VALUES('56-85JT 85mm', 85, 1.75, 0.37, 2.3, 'manual');
+INSERT INTO Gun VALUES('62-85T 85mm', 85, 1.65, 0.37, 2.3, 'manual');
+INSERT INTO Gun VALUES('64-85T 85mm', 85, 1.7, 0.36, 2.3, 'manual');
+INSERT INTO Gun VALUES('59-100T 100mm', 100, 2.257, 0.38, 2.6, 'manual');
+INSERT INTO Gun VALUES('S-53 85mm', 85, 1.55, 0.42, 2.9, 'manual');
+INSERT INTO Gun VALUES('44-100JT 100mm', 100, 2.257, 0.42, 2.9, 'manual');
+INSERT INTO Gun VALUES('37-122JT 122mm', 122, 2.44, 0.48, 3.4, 'manual');
+--INSERT INTO Gun VALUES('D-25T 122mm', 122, 2.59, 0.46, 3.4);
+--Gun-Japan
+INSERT INTO Gun VALUES('Type 5 75mm', 75, 1.489, 0.36, 2.1, 'manual');
+INSERT INTO Gun VALUES('Type 5 Model I 75mm', 75, 1.764, 0.36, 2.1, 'manual');
+INSERT INTO Gun VALUES('Type 5 Auto 75mm', 75, 1.764, 0.35, 1.7, 'auto');
+INSERT INTO Gun VALUES('Type 92 100mm', 100, 1.792, 0.41, 3.2, 'manual');
+INSERT INTO Gun VALUES('Experimental 100mm', 100, 2.5, 0.42, 3.3, 'manual');
+INSERT INTO Gun VALUES('Type 96 150mm', 150, 1.432, 0.56, 3.5, 'manual');
+--Gun-Czech
+INSERT INTO Gun VALUES('VZ 44S 85mm', 85, 1.55, 0.37, 2.3, 'manual');
+INSERT INTO Gun VALUES('VZ 44S 100mm', 100, 2.257, 0.4, 2.6, 'manual');
+
+
+
+--Ammo
+--
+--Ammo-Russia
+INSERT INTO Ammo VALUES('UBR-365KBM AP', 'AP');
+INSERT INTO Ammo VALUES('UBR-365PBM APCR', 'APCR');
+INSERT INTO Ammo VALUES('UOF-365BM HE', 'HE');
+INSERT INTO Ammo VALUES('UBR-365KBM100 AP', 'AP');
+INSERT INTO Ammo VALUES('UBR-365PBM100 APCR', 'APCR');
+INSERT INTO Ammo VALUES('UOF-365BM100 HE', 'HE');
+INSERT INTO Ammo VALUES('UBR-354A AP', 'AP');
+INSERT INTO Ammo VALUES('UBR-354MP APCR', 'APCR');
+INSERT INTO Ammo VALUES('UOF-354 HE', 'HE');
+INSERT INTO Ammo VALUES('UBR-271K AP', 'AP');
+INSERT INTO Ammo VALUES('UBR-271N APCR', 'APCR');
+INSERT INTO Ammo VALUES('UO-271U HE', 'HE');
+INSERT INTO Ammo VALUES('UBR-354MA AP', 'AP');
+INSERT INTO Ammo VALUES('UOF-354M HE', 'HE');
+INSERT INTO Ammo VALUES('UBR-420 AP', 'AP');
+INSERT INTO Ammo VALUES('UBR-420P APCR', 'APCR');
+INSERT INTO Ammo VALUES('UOF-420 HE', 'HE');
+INSERT INTO Ammo VALUES('UBR-365K AP', 'AP');
+INSERT INTO Ammo VALUES('UBR-365P APCR', 'APCR');
+INSERT INTO Ammo VALUES('UOF-365K HE', 'HE');
+INSERT INTO Ammo VALUES('F-420S HE', 'HE');
+INSERT INTO Ammo VALUES('BP-460A HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('UBR-412 AP', 'AP');
+INSERT INTO Ammo VALUES('UBR-412P APCR', 'APCR');
+INSERT INTO Ammo VALUES('UOF-412 HE', 'HE');
+INSERT INTO Ammo VALUES('UBR-471 AP', 'AP');
+INSERT INTO Ammo VALUES('BR-471D APCR', 'APCR');
+INSERT INTO Ammo VALUES('UOF-471 HE', 'HE');
+INSERT INTO Ammo VALUES('53-OF-530 HE', 'HE');
+INSERT INTO Ammo VALUES('53-BP-540 HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('53-G-530 AP', 'AP');
+INSERT INTO Ammo VALUES('53-OF-551 HE', 'HE');
+INSERT INTO Ammo VALUES('53-G-551 AP', 'AP');
+INSERT INTO Ammo VALUES('53-OF-551BM HE', 'HE');
+INSERT INTO Ammo VALUES('F-625D HE', 'HE');
+INSERT INTO Ammo VALUES('G-620 AP', 'AP');
+INSERT INTO Ammo VALUES('F-625DBM HE', 'HE');
+--Ammo-Germany
+INSERT INTO Ammo VALUES('OFL AP', 'AP');
+INSERT INTO Ammo VALUES('OCC HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('OE HE', 'HE');
+INSERT INTO Ammo VALUES('Mecar AP', 'AP');
+INSERT INTO Ammo VALUES('Mecar HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('Mecar HE', 'HE');
+INSERT INTO Ammo VALUES('Pzgr 39 L AP', 'AP');
+INSERT INTO Ammo VALUES('Pzgr 40 L APCR', 'APCR');
+INSERT INTO Ammo VALUES('Sprgr 18 L HE', 'HE');
+INSERT INTO Ammo VALUES('Pzgr 39 K AP', 'AP');
+INSERT INTO Ammo VALUES('Gr 39 H1A HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('Sprgr K HE', 'HE');
+INSERT INTO Ammo VALUES('Pzgr 39 AP', 'AP');
+INSERT INTO Ammo VALUES('Pzgr 40 APCR', 'APCR');
+INSERT INTO Ammo VALUES('Sprgr 18 HE', 'HE');
+INSERT INTO Ammo VALUES('Pzgr 39 105 AP', 'AP');
+INSERT INTO Ammo VALUES('Pzgr 40 105 APCR', 'APCR');
+INSERT INTO Ammo VALUES('Sprgr 18 105 HE', 'HE');
+INSERT INTO Ammo VALUES('Pzgr 39/43 AP', 'AP');
+INSERT INTO Ammo VALUES('Pzgr 40/43 APCR', 'APCR');
+INSERT INTO Ammo VALUES('Sprgr 43 HE', 'HE');
+INSERT INTO Ammo VALUES('PzGr rot AP', 'AP');
+INSERT INTO Ammo VALUES('PzGr 40 rot APCR', 'APCR');
+INSERT INTO Ammo VALUES('Gr 19 HE', 'HE');
+INSERT INTO Ammo VALUES('Pzgr Nr 4 AP', 'AP');
+INSERT INTO Ammo VALUES('Sprgr Nr 9 HE', 'HE');
+INSERT INTO Ammo VALUES('Sprgr G HE', 'HE');
+INSERT INTO Ammo VALUES('Gr 39 H1A G HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('Sprgr G 31 HE', 'HE');
+INSERT INTO Ammo VALUES('Gr 39H2A G HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('Sprgr 36 HE', 'HE');
+--Ammo-USA
+INSERT INTO Ammo VALUES('M62 AP', 'AP');
+INSERT INTO Ammo VALUES('HVAP M93 APCR', 'APCR');
+INSERT INTO Ammo VALUES('M42A1 HE', 'HE');
+INSERT INTO Ammo VALUES('HVAP-DS-T M331A2 APCR', 'APCR');
+INSERT INTO Ammo VALUES('T M496 HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('M352 HE', 'HE');
+INSERT INTO Ammo VALUES('M339 AP', 'AP');
+INSERT INTO Ammo VALUES('HVAP M319 APCR', 'APCR');
+INSERT INTO Ammo VALUES('M77 AP', 'AP');
+INSERT INTO Ammo VALUES('HVAP M304 APCR', 'APCR');
+INSERT INTO Ammo VALUES('M71 HE', 'HE');
+INSERT INTO Ammo VALUES('M1 HE', 'HE');
+INSERT INTO Ammo VALUES('M67 HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('T32 AP', 'AP');
+INSERT INTO Ammo VALUES('T29E3 APCR', 'APCR');
+INSERT INTO Ammo VALUES('M11 HE', 'HE');
+INSERT INTO Ammo VALUES('M101 HE', 'HE');
+INSERT INTO Ammo VALUES('M101M2 HE', 'HE');
+INSERT INTO Ammo VALUES('M101M4 HE', 'HE');
+INSERT INTO Ammo VALUES('M101M6 HE', 'HE');
+--Ammo-France
+INSERT INTO Ammo VALUES('Prf mle 1926 AP', 'AP');
+INSERT INTO Ammo VALUES('Frt Prf mle 1940 APCR', 'APCR');
+INSERT INTO Ammo VALUES('OE mle 1915 HE', 'HE');
+INSERT INTO Ammo VALUES('Prf mle 1930 AP', 'AP');
+INSERT INTO Ammo VALUES('Frt Prf mle 1944 75 APCR', 'APCR');
+INSERT INTO Ammo VALUES('Prf mle 1941 AP', 'AP');
+INSERT INTO Ammo VALUES('Frt Prf mle 1944 90 APCR', 'APCR');
+INSERT INTO Ammo VALUES('OE mle 1924 HE', 'HE');
+INSERT INTO Ammo VALUES('Prf mle 1940 105 AP', 'AP');
+INSERT INTO Ammo VALUES('Frt Prf mle 1943 APCR', 'APCR');
+INSERT INTO Ammo VALUES('OE mle 1924 105 HE', 'HE');
+INSERT INTO Ammo VALUES('Prf mle 1940 100 AP', 'AP');
+INSERT INTO Ammo VALUES('Frt Prf mle 1945 APCR', 'APCR');
+INSERT INTO Ammo VALUES('OE mle 1930 HE', 'HE');
+INSERT INTO Ammo VALUES('OE mle 1956 HE', 'HE');
+INSERT INTO Ammo VALUES('OCO mle 1944 HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('M107 HE', 'HE');
+--Ammo-United Kingdom
+INSERT INTO Ammo VALUES('Mk 1 AP', 'AP');
+INSERT INTO Ammo VALUES('Mk 3 APCR', 'APCR');
+INSERT INTO Ammo VALUES('Mk 2 HE', 'HE');
+INSERT INTO Ammo VALUES('Mk 3 HE', 'HE');
+INSERT INTO Ammo VALUES('MK 1 HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('HV Mk 1 AP', 'AP');
+INSERT INTO Ammo VALUES('HV Mk 3 APCR', 'APCR');
+INSERT INTO Ammo VALUES('HV Mk 2 HE', 'HE');
+INSERT INTO Ammo VALUES('Mk 8T AP', 'AP');
+INSERT INTO Ammo VALUES('Mk 1T77 APCR', 'APCR');
+INSERT INTO Ammo VALUES('Mk 1T77 HE', 'HE');
+INSERT INTO Ammo VALUES('17-Pr Mk 9T AP', 'AP');
+INSERT INTO Ammo VALUES('17-Pr Mk 1T APCR', 'APCR');
+INSERT INTO Ammo VALUES('17-Pr Mk 2T HE', 'HE');
+INSERT INTO Ammo VALUES('Mk 1T AP', 'AP');
+INSERT INTO Ammo VALUES('Mk 1T APCR', 'APCR');
+INSERT INTO Ammo VALUES('Mk 10T HE', 'HE');
+INSERT INTO Ammo VALUES('17-Pr Mk 6T AP', 'AP');
+INSERT INTO Ammo VALUES('17-Pr Mk 8T AP', 'AP');
+INSERT INTO Ammo VALUES('17-Pr Mk 1T HE', 'HE');
+INSERT INTO Ammo VALUES('Mk 1 84 AP', 'AP');
+INSERT INTO Ammo VALUES('Mk 2 84 APCR', 'APCR');
+INSERT INTO Ammo VALUES('Mk 3 84 HE', 'HE');
+INSERT INTO Ammo VALUES('Mk XIII HE', 'HE');
+INSERT INTO Ammo VALUES('80-lb Mk 3 HE', 'HE');
+INSERT INTO Ammo VALUES('80-lb Mk 4 HE', 'HE');
+--Ammo-China
+INSERT INTO Ammo VALUES('Chuan dun-350 AP', 'AP');
+INSERT INTO Ammo VALUES('Chuan jian-350 APCR', 'APCR');
+INSERT INTO Ammo VALUES('Sha bao-350 HE', 'HE');
+INSERT INTO Ammo VALUES('Chuan jian-365 AP', 'AP');
+INSERT INTO Ammo VALUES('Chuan chao-367 APCR', 'APCR');
+INSERT INTO Ammo VALUES('Sha bao-365 HE', 'HE');
+INSERT INTO Ammo VALUES('Chuan bei-367 AP', 'AP');
+INSERT INTO Ammo VALUES('Po-365 HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('Sha bao-367 HE', 'HE');
+INSERT INTO Ammo VALUES('Chuan bei-367G AP', 'AP');
+INSERT INTO Ammo VALUES('Po-367 HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('Sha bao-367G HE', 'HE');
+INSERT INTO Ammo VALUES('Chuan bei-412 AP', 'AP');
+INSERT INTO Ammo VALUES('Chuan chao-412 APCR', 'APCR');
+INSERT INTO Ammo VALUES('Sha bao-412 HE', 'HE');
+INSERT INTO Ammo VALUES('Chuan bei-471 AP', 'AP');
+INSERT INTO Ammo VALUES('Po-471 HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('Sha bao-471 HE', 'HE');
+--Ammo-Japan
+INSERT INTO Ammo VALUES('Type 1 604R AP', 'AP');
+INSERT INTO Ammo VALUES('Type 1 Toku Kou 604R AP', 'AP');
+INSERT INTO Ammo VALUES('Type 4 604R HE', 'HE');
+INSERT INTO Ammo VALUES('Type 1 Toku Kou Kai AP', 'AP');
+INSERT INTO Ammo VALUES('Type 1 Toku Otsu AP', 'AP');
+INSERT INTO Ammo VALUES('Type 4 Kai HE', 'HE');
+INSERT INTO Ammo VALUES('Type 95 AP', 'AP');
+INSERT INTO Ammo VALUES('Type 95 Toku Kou AP', 'AP');
+INSERT INTO Ammo VALUES('Type 92 HE', 'HE');
+INSERT INTO Ammo VALUES('Experimental Type 2 AP', 'AP');
+INSERT INTO Ammo VALUES('Type 2 Toku Kou AP', 'AP');
+INSERT INTO Ammo VALUES('Type 91 HE', 'HE');
+INSERT INTO Ammo VALUES('Type 1 AP', 'AP');
+INSERT INTO Ammo VALUES('Type 3 HEAT', 'HEAT');
+INSERT INTO Ammo VALUES('Type 96 HE', 'HE');
+--Ammo-Czech
+INSERT INTO Ammo VALUES('Vz 44 AP', 'AP');
+INSERT INTO Ammo VALUES('Vz 44 PJ AP', 'AP');
+INSERT INTO Ammo VALUES('Vz 44 N HE', 'HE');
+INSERT INTO Ammo VALUES('JPSv AP', 'AP');
+INSERT INTO Ammo VALUES('JPrSv APCR', 'APCR');
+INSERT INTO Ammo VALUES('JOF HE', 'HE');
+
+
+--Fitting
+--
+--Fitting-Russia
+INSERT INTO Fitting VALUES('RU', 'LTTB', 'ZiS-S-53 85mm', 4.8, -5, 25);
+INSERT INTO Fitting VALUES('RU', 'LTTB', 'D5T-85BM 85mm', 5.2, -5, 25);
+INSERT INTO Fitting VALUES('RU', 'LTTB', 'D-10-85 85mm', 5.1, -5, 25);
+INSERT INTO Fitting VALUES ('RU', 'A-44', 'F-34 76mm', 3.3, -5, 25);
+INSERT INTO Fitting VALUES ('RU', 'A-44', 'ZiS-4 57mm', 2.3, -5, 25);
+INSERT INTO Fitting VALUES ('RU', 'A-44', 'S-54 76mm', 3.3, -5, 25);
+INSERT INTO Fitting VALUES ('RU', 'A-44', 'ZiS-6 107mm', 10.5, -5, 25);
+INSERT INTO Fitting VALUES ('RU', 'KV-13', 'ZiS-5 76mm', 3.6, -7, 25);
+INSERT INTO Fitting VALUES ('RU', 'KV-13', 'S-54 76mm', 3.6, -7, 25);
+INSERT INTO Fitting VALUES ('RU', 'KV-13', 'D-5T 85mm', 5.0, -7, 25);
+INSERT INTO Fitting VALUES ('RU', 'KV-13', 'D5T-85BM 85mm', 5.7, -7, 25);
+INSERT INTO Fitting VALUES ('RU', 'KV-13', 'U-11 122mm', 14.4, -7, 25);
+INSERT INTO Fitting VALUES ('RU', 'T-43', 'ZiS-S-53 85mm', 5.0, -8, 26);
+INSERT INTO Fitting VALUES ('RU', 'T-43', 'D5T-85BM 85mm', 5.4, -8, 26);
+INSERT INTO Fitting VALUES ('RU', 'T-43', 'U-11 122mm', 11.4, -8, 26);
+INSERT INTO Fitting VALUES ('RU', 'IS', 'D-5T 85mm', 4.9, -5, 22);
+INSERT INTO Fitting VALUES ('RU', 'IS', 'D5T-85BM 85mm', 5.8, -5, 22);
+INSERT INTO Fitting VALUES ('RU', 'IS', 'D10T 100mm', 7.8, -5, 22);
+INSERT INTO Fitting VALUES ('RU', 'IS', 'D-2-5T 122mm', 14.7, -5, 22);
+INSERT INTO Fitting VALUES ('RU', 'IS', 'D-25T 122mm', 12.3, -5, 22);
+INSERT INTO Fitting VALUES ('RU', 'KV-3', 'F-30 85mm', 5.1, -7, 20);
+INSERT INTO Fitting VALUES ('RU', 'KV-3', 'S-31 85mm', 5.1, -7, 20);
+INSERT INTO Fitting VALUES ('RU', 'KV-3', 'ZiS-6 107mm', 9.7, -7, 20);
+INSERT INTO Fitting VALUES ('RU', 'KV-3', 'D10T 100mm', 9.3, -7, 20);
+INSERT INTO Fitting VALUES ('RU', 'KV-3', 'D-2-5T 122mm', 14.7, -7, 20);
+INSERT INTO Fitting VALUES ('RU', 'KV-3', 'D-25T 122mm', 12.3, -7, 20);
+INSERT INTO Fitting VALUES ('RU', 'SU-152', 'ML-20 152mm', 17.7, -6, 18);
+INSERT INTO Fitting VALUES ('RU', 'SU-152', 'A-19 122mm', 9.0, -6, 18);
+INSERT INTO Fitting VALUES ('RU', 'SU-152', 'D-25S 122mm', 7.4, -6, 18);
+INSERT INTO Fitting VALUES ('RU', 'SU-100M1', 'D-10S 100mm', 7.3, -4, 20);
+INSERT INTO Fitting VALUES ('RU', 'SU-100M1', 'LB-1C 100mm', 5.9, -4, 20);
+INSERT INTO Fitting VALUES ('RU', 'SU-14-1', 'Howitzer ML-20 152mm', 26.0, 0, 45);
+INSERT INTO Fitting VALUES ('RU', 'SU-14-1', 'BR-2 152mm', 27.0, 0, 45);
+INSERT INTO Fitting VALUES ('RU', 'SU-14-1', 'B-4 203mm', 55.5, 0, 45);
+INSERT INTO Fitting VALUES ('RU', 'S-51', 'BR-2 152mm', 27.9, -1.5, 58);
+INSERT INTO Fitting VALUES ('RU', 'S-51', 'B-4 203mm', 55.5, -1.5, 58);
+--Fitting-Germany
+INSERT INTO Fitting VALUES ('DE', 'SPIC', 'D921-F1 90mm',  7.9, -8, 15);
+INSERT INTO Fitting VALUES ('DE', 'SPIC', 'Mecar 90mm',  7.9, -8, 15);
+INSERT INTO Fitting VALUES ('DE', 'SPIC', 'Mecar Mit 90mm',  3.0, -8, 15);
+INSERT INTO Fitting VALUES ('DE', 'Panther', 'KwK 42 L/70 75mm', 4.2, -8, 18);
+INSERT INTO Fitting VALUES ('DE', 'Panther', 'KwK L/100 75mm', 4.6, -8, 18);
+INSERT INTO Fitting VALUES ('DE', 'Panther', 'KwK L/28 105mm', 8.0, -8, 18);
+INSERT INTO Fitting VALUES ('DE', 'VK3002D', 'KwK 40 L/48 75mm', 4.0, -8, 20);
+INSERT INTO Fitting VALUES ('DE', 'VK3002D', 'KwK 42 L/70 75mm', 4.4, -8, 20);
+INSERT INTO Fitting VALUES ('DE', 'VK3002D', 'KwK 36 L/56 88mm', 6.4, -8, 20);
+INSERT INTO Fitting VALUES ('DE', 'VK3002D', 'KwK L/28 105mm', 7.9, -8, 20);
+INSERT INTO Fitting VALUES ('DE', 'Tiger I', 'KwK 42 L/70 75mm', 4.0, -8, 15);
+INSERT INTO Fitting VALUES ('DE', 'Tiger I', 'KwK 36 L/56 88mm', 6.3, -8, 15);
+INSERT INTO Fitting VALUES ('DE', 'Tiger I', 'KwK L/28 105mm', 8.0, -8, 15);
+INSERT INTO Fitting VALUES ('DE', 'Tiger I', 'KwK 43 L/71 88mm', 6.7, -8, 15);
+INSERT INTO Fitting VALUES ('DE', 'Tiger P', 'KwK 42 L/70 75mm', 4.6, -6, 17);
+INSERT INTO Fitting VALUES ('DE', 'Tiger P', 'KwK 36 L/56 88mm', 7.0, -6, 17);
+INSERT INTO Fitting VALUES ('DE', 'Tiger P', 'KwK L/28 105mm', 8.0, -6, 17);
+INSERT INTO Fitting VALUES ('DE', 'Tiger P', 'KwK 43 L/71 88mm', 9.1, -6, 17);
+INSERT INTO Fitting VALUES ('DE', 'Sturer Emil', 'Kanone 18 105mm', 7.8, -15, 10);
+INSERT INTO Fitting VALUES ('DE', 'Sturer Emil', 'Kanone 40 128mm', 13.8, -15, 10);
+INSERT INTO Fitting VALUES ('DE', 'Jagdpanther', 'Pak 42 L/70 75mm', 3.8, -8, 14);
+INSERT INTO Fitting VALUES ('DE', 'Jagdpanther', 'Pak L/56 88mm', 5.4, -8, 14);
+INSERT INTO Fitting VALUES ('DE', 'Jagdpanther', 'Pak 43 L/71 88mm', 6.1, -8, 14);
+INSERT INTO Fitting VALUES ('DE', 'Jagdpanther', 'Pak L/52 105mm', 8.2, -8, 14);
+INSERT INTO Fitting VALUES ('DE', 'GW Panther', 'sFH 18 L/29.5 150mm', 28.4, -3, 45);
+INSERT INTO Fitting VALUES ('DE', 'GW Panther', 'sFH 43 150mm', 34.5, -3, 45);
+--Fitting-USA
+INSERT INTO Fitting VALUES ('US', 'T71', 'M1A2 76mm', 2, -7, 20);
+INSERT INTO Fitting VALUES ('US', 'T71', 'T185 76mm', 2, -7, 20);
+INSERT INTO Fitting VALUES ('US', 'M41 Bulldog', 'T91 76mm', 3.3, -10, 20);
+INSERT INTO Fitting VALUES ('US', 'M41 Bulldog', 'M32 76mm', 4.5, -10, 20);
+INSERT INTO Fitting VALUES ('US', 'M41 Bulldog', 'M32 late 76mm', 4.3, -10, 20);
+INSERT INTO Fitting VALUES ('US', 'M41 Bulldog', 'T185 76mm', 2, -10, 20);
+INSERT INTO Fitting VALUES ('US', 'T20', 'M1A1 76mm', 4.2, -10, 25);
+INSERT INTO Fitting VALUES ('US', 'T20', 'M1A2 76mm', 3.3, -10, 25);
+INSERT INTO Fitting VALUES ('US', 'T20', 'M3 90mm', 9.4, -10, 25);
+INSERT INTO Fitting VALUES ('US', 'T20', 'M4 105mm', 8.0, -10, 25);
+INSERT INTO Fitting VALUES ('US', 'T29', 'M1A2 76mm', 3.6, -10, 15);
+INSERT INTO Fitting VALUES ('US', 'T29', 'M3 90mm', 7.6, -10, 15);
+INSERT INTO Fitting VALUES ('US', 'T29', 'T5E1 105mm', 13.7, -10, 15);
+INSERT INTO Fitting VALUES ('US', 'T25 AT', 'AT M3 90mm', 7.3, -10, 20);
+INSERT INTO Fitting VALUES ('US', 'T25 AT', 'AT T15E2 90mm', 7.3, -10, 20);
+INSERT INTO Fitting VALUES ('US', 'T25 AT', 'AT T5E1 105mm', 9.1, -10, 20);
+INSERT INTO Fitting VALUES ('US', 'T25/2', 'AT M3 90mm', 7.7, -10, 25);
+INSERT INTO Fitting VALUES ('US', 'T25/2', 'AT T15E2 90mm', 7.7, -10, 25);
+INSERT INTO Fitting VALUES ('US', 'M12', 'M1918M1 155mm', 28.4, -5, 45);
+INSERT INTO Fitting VALUES ('US', 'M12', 'M1 155mm', 37.5, -5, 45);
+--Fitting-France
+INSERT INTO Fitting VALUES ('FR', 'AMX 13 75', 'SA49 75mm', 1.7, -8, 9);
+INSERT INTO Fitting VALUES ('FR', 'AMX 13 75', 'SA50 75mm', 2.0, -8, 9);
+INSERT INTO Fitting VALUES ('FR', 'AMX M4', 'DCA 30 90mm', 7.6, -10, 14);
+INSERT INTO Fitting VALUES ('FR', 'AMX M4', 'F3 90mm', 8.6, -10, 14);
+INSERT INTO Fitting VALUES ('FR', 'AMX M4', 'Canon 13TR 105mm', 10.0, -10, 14);
+INSERT INTO Fitting VALUES ('FR', 'AMX M4', 'DCA 45 90mm', 8.6, -10, 14);
+INSERT INTO Fitting VALUES ('FR', 'AMX AC', 'DCA 30 90mm', 6.3, -10, 15);
+INSERT INTO Fitting VALUES ('FR', 'AMX AC', 'DCA 45 90mm', 6.9, -10, 15);
+INSERT INTO Fitting VALUES ('FR', 'AMX AC', 'SA47 100mm', 10.0, -10, 15);
+INSERT INTO Fitting VALUES ('FR', 'Lorraine 155', 'de 33 155mm', 29.9, 0, 45);
+INSERT INTO Fitting VALUES ('FR', 'Lorraine 155', 'mle 1950 155mm', 29.9, 0, 45);
+--Fitting-United Kingdom
+INSERT INTO Fitting VALUES ('GB', 'Comet', 'Mk V 75mm', 3.0, -13, 20);
+INSERT INTO Fitting VALUES ('GB', 'Comet', 'Howitzer 94mm', 7.0, -13, 20);
+INSERT INTO Fitting VALUES ('GB', 'Comet', 'Vickers HV 75mm', 3.9, -13, 20);
+INSERT INTO Fitting VALUES ('GB', 'Comet', 'OQF MK II 77mm', 3.9, -13, 20);
+INSERT INTO Fitting VALUES ('GB', 'Black Prince', 'OQF MK II 77mm', 4.2, -8, 20);
+INSERT INTO Fitting VALUES ('GB', 'Black Prince', 'OQF MK VII 77mm', 5.0, -8, 20);
+INSERT INTO Fitting VALUES ('GB', 'AT 7', 'QF AT MK V 57mm', 1.1, -5, 7.5);
+INSERT INTO Fitting VALUES ('GB', 'AT 7', 'OQF AT MK II 77mm', 3.3, -5, 7.5);
+INSERT INTO Fitting VALUES ('GB', 'AT 7', 'OQF AT MK VII 77mm', 3.8, -5, 7.5);
+INSERT INTO Fitting VALUES ('GB', 'AT 7', 'OQF AT Barrel 84mm', 6.2, -5, 7.5);
+INSERT INTO Fitting VALUES ('GB', 'Challenger', 'OQF AT MK II 77mm', 4.5, -10, 20);
+INSERT INTO Fitting VALUES ('GB', 'Challenger', 'OQF AT MK VII 77mm', 4.4, -10, 20);
+INSERT INTO Fitting VALUES ('GB', 'Crusader SP', 'QF Howitzer 115mm', 12.0, -5, 45);
+INSERT INTO Fitting VALUES ('GB', 'Crusader SP', 'BL Gun 140mm', 28.0, -5, 45);
+--Fitting-China
+INSERT INTO Fitting VALUES ('CN', 'WZ-131', '54-76TG 76mm', 1.3, -5, 20);
+INSERT INTO Fitting VALUES ('CN', 'WZ-131', '56-85JT 85mm', 5.5, -5, 20);
+INSERT INTO Fitting VALUES ('CN', 'WZ-131', '62-85T 85mm', 5.5, -5, 20);
+INSERT INTO Fitting VALUES ('CN', 'WZ-131', '64-85T 85mm', 5.5, -5, 20);
+INSERT INTO Fitting VALUES ('CN', 'WZ-131', '59-100T 100mm', 8.3, -5, 20);
+INSERT INTO Fitting VALUES ('CN', 'T-34-1', 'S-53 85mm', 5, -5, 22);
+INSERT INTO Fitting VALUES ('CN', 'T-34-1', '56-85JT 85mm', 5, -5, 22);
+INSERT INTO Fitting VALUES ('CN', 'T-34-1', '44-100JT 100mm', 9.3, -5, 22);
+INSERT INTO Fitting VALUES ('CN', 'IS-2', '44-100JT 100mm', 9.3, -6, 20);
+INSERT INTO Fitting VALUES ('CN', 'IS-2', '37-122JT 122mm', 14.0, -6, 20);
+INSERT INTO Fitting VALUES ('CN', 'IS-2', 'D-25T 122mm', 14.0, -6, 20);
+--Fitting-Japan
+INSERT INTO Fitting VALUES ('JP', 'Type 5', 'Type 5 75mm', 4.7,  -10, 20);
+INSERT INTO Fitting VALUES ('JP', 'Type 5', 'Type 5 Model I 75mm', 3.8,  -10, 20);
+INSERT INTO Fitting VALUES ('JP', 'Type 5', 'Type 5 Auto 75mm', 1.0,  -10, 20);
+INSERT INTO Fitting VALUES ('JP', 'O-Ni', 'Type 92 100mm', 11.0, -10, 20);
+INSERT INTO Fitting VALUES ('JP', 'O-Ni', 'Experimental 100mm', 12.0, -10, 20);
+INSERT INTO Fitting VALUES ('JP', 'O-Ni', 'Type 96 150mm', 23.0, -10, 20);	
+--Fitting-Czech
+INSERT INTO Fitting VALUES ('CZ', 'T-34/100', 'VZ 44S 85mm', 6.5, -5, 25);
+INSERT INTO Fitting VALUES ('CZ', 'T-34/100', 'VZ 44S 100mm', 9.2, -5, 25);
+
+
+--Firing
+--
+--Firing-Russia
+INSERT INTO Firing VALUES('ZiS-S-53 85mm', 'UBR-365KBM AP', 126, 160);
+INSERT INTO Firing VALUES('ZiS-S-53 85mm', 'UBR-365PBM APCR', 167, 160);
+INSERT INTO Firing VALUES('ZiS-S-53 85mm', 'UOF-365BM HE', 43, 280);
+INSERT INTO Firing VALUES('D5T-85BM 85mm', 'UBR-365KBM AP', 144, 180);
+INSERT INTO Firing VALUES('D5T-85BM 85mm', 'UBR-365PBM APCR', 194, 180);
+INSERT INTO Firing VALUES('D5T-85BM 85mm', 'UOF-365BM HE', 44, 300);
+INSERT INTO Firing VALUES('D-10-85 85mm', 'UBR-365KBM100 AP', 170, 180);
+INSERT INTO Firing VALUES('D-10-85 85mm', 'UBR-365PBM100 APCR', 216, 180);
+INSERT INTO Firing VALUES('D-10-85 85mm', 'UOF-365BM100 HE', 44, 300);
+INSERT INTO Firing VALUES('F-34 76mm', 'UBR-354A AP', 86, 110);
+INSERT INTO Firing VALUES('F-34 76mm', 'UBR-354MP APCR', 102, 110);
+INSERT INTO Firing VALUES('F-34 76mm', 'UOF-354 HE', 38, 156);
+INSERT INTO Firing VALUES('ZiS-4 57mm', 'UBR-271K AP', 112, 85);
+INSERT INTO Firing VALUES('ZiS-4 57mm', 'UBR-271N APCR', 189, 85);
+INSERT INTO Firing VALUES('ZiS-4 57mm', 'UO-271U HE', 29, 95);
+INSERT INTO Firing VALUES('S-54 76mm', 'UBR-354MA AP', 125, 115);
+INSERT INTO Firing VALUES('S-54 76mm', 'UBR-354MP APCR', 156, 110);
+INSERT INTO Firing VALUES('S-54 76mm', 'UOF-354M HE', 39, 165);
+INSERT INTO Firing VALUES('ZiS-6 107mm', 'UBR-420 AP', 167, 300);
+INSERT INTO Firing VALUES('ZiS-6 107mm', 'UBR-420P APCR', 219, 300);
+INSERT INTO Firing VALUES('ZiS-6 107mm', 'UOF-420 HE', 54, 360);
+INSERT INTO Firing VALUES('ZiS-5 76mm', 'UBR-354A AP', 86, 110);
+INSERT INTO Firing VALUES('ZiS-5 76mm', 'UBR-354MP APCR', 102, 110);
+INSERT INTO Firing VALUES('ZiS-5 76mm', 'UOF-354 HE', 38, 156);
+INSERT INTO Firing VALUES('D-5T 85mm', 'UBR-365K AP', 120, 160);
+INSERT INTO Firing VALUES('D-5T 85mm', 'UBR-365P APCR', 161, 160);
+INSERT INTO Firing VALUES('D-5T 85mm', 'UOF-365K HE', 43, 280);
+INSERT INTO Firing VALUES('U-11 122mm', 'F-420S HE', 61, 450);
+INSERT INTO Firing VALUES('U-11 122mm', 'BP-460A HEAT', 140, 370);
+INSERT INTO Firing VALUES('D10T 100mm', 'UBR-412 AP', 175, 250);
+INSERT INTO Firing VALUES('D10T 100mm', 'UBR-412P APCR', 235, 250);
+INSERT INTO Firing VALUES('D10T 100mm', 'UOF-412 HE', 50, 330);
+INSERT INTO Firing VALUES('D-2-5T 122mm', 'UBR-471 AP', 175, 390);
+INSERT INTO Firing VALUES('D-2-5T 122mm', 'BR-471D APCR', 217, 390);
+INSERT INTO Firing VALUES('D-2-5T 122mm', 'UOF-471 HE', 61, 530);
+INSERT INTO Firing VALUES('D-25T 122mm', 'UBR-471 AP', 175, 390);
+INSERT INTO Firing VALUES('D-25T 122mm', 'BR-471D APCR', 217, 390);
+INSERT INTO Firing VALUES('D-25T 122mm', 'UOF-471 HE', 61, 530);
+INSERT INTO Firing VALUES('F-30 85mm', 'UBR-365K AP', 120, 160);
+INSERT INTO Firing VALUES('F-30 85mm', 'UBR-365P APCR', 161, 160);
+INSERT INTO Firing VALUES('F-30 85mm', 'UOF-365K HE', 43, 280);
+INSERT INTO Firing VALUES('S-31 85mm', 'UBR-365K AP', 119, 160);
+INSERT INTO Firing VALUES('S-31 85mm', 'UBR-365P APCR', 159, 160);
+INSERT INTO Firing VALUES('S-31 85mm', 'UOF-365K HE', 43, 280);
+INSERT INTO Firing VALUES('Howitzer ML-20 152mm', '53-OF-530 HE', 88, 910);
+INSERT INTO Firing VALUES('Howitzer ML-20 152mm', '53-BP-540 HEAT', 250, 700);
+INSERT INTO Firing VALUES('A-19 122mm', 'UBR-471 AP', 175, 390);
+INSERT INTO Firing VALUES('A-19 122mm', 'BR-471D APCR', 217, 390);	
+INSERT INTO Firing VALUES('A-19 122mm', 'UOF-471 HE', 61, 530);
+INSERT INTO Firing VALUES('D-25S 122mm', 'UBR-471 AP', 175, 390);
+INSERT INTO Firing VALUES('D-25S 122mm', 'BR-471D APCR', 217, 390);
+INSERT INTO Firing VALUES('D-25S 122mm', 'UOF-471 HE', 64, 530);
+INSERT INTO Firing VALUES('D-10S 100mm', 'UBR-412 AP', 175, 250);
+INSERT INTO Firing VALUES('D-10S 100mm', 'UBR-412P APCR', 235, 250);
+INSERT INTO Firing VALUES('D-10S 100mm', 'UOF-412 HE', 50, 330);
+INSERT INTO Firing VALUES('LB-1C 100mm', 'UBR-412 AP', 183, 250);
+INSERT INTO Firing VALUES('LB-1C 100mm', 'UBR-412P APCR', 235, 250);
+INSERT INTO Firing VALUES('LB-1C 100mm', 'UOF-412 HE', 50, 330);
+INSERT INTO Firing VALUES('ML-20 152mm', '53-G-530 AP', 135, 700);
+INSERT INTO Firing VALUES('ML-20 152mm', '53-BP-540 HEAT', 250, 700);
+INSERT INTO Firing VALUES('ML-20 152mm', '53-OF-530 HE', 86, 910);
+INSERT INTO Firing VALUES('BR-2 152mm', '53-OF-551 HE', 88, 950);
+INSERT INTO Firing VALUES('BR-2 152mm', '53-G-551 AP', 246, 750);
+INSERT INTO Firing VALUES('BR-2 152mm', '53-OF-551BM HE', 90, 950);
+INSERT INTO Firing VALUES('B-4 203mm', 'F-625D HE', 102, 1850);
+INSERT INTO Firing VALUES('B-4 203mm', 'G-620 AP', 260, 1450);
+INSERT INTO Firing VALUES('B-4 203mm', 'F-625DBM HE', 102, 1850);
+--Firing-Germany
+INSERT INTO Firing VALUES('D921-F1 90mm', 'OFL AP', 170, 240);
+INSERT INTO Firing VALUES('D921-F1 90mm', 'OCC HEAT', 250, 240);
+INSERT INTO Firing VALUES('D921-F1 90mm', 'OE HE', 45, 320);
+INSERT INTO Firing VALUES('Mecar 90mm', 'Mecar AP', 180, 240);
+INSERT INTO Firing VALUES('Mecar 90mm', 'Mecar HEAT', 250, 240);
+INSERT INTO Firing VALUES('Mecar 90mm', 'Mecar HE', 45, 320);
+INSERT INTO Firing VALUES('Mecar Mit 90mm', 'Mecar AP', 180, 240);
+INSERT INTO Firing VALUES('Mecar Mit 90mm', 'Mecar HEAT', 250, 240);
+INSERT INTO Firing VALUES('Mecar Mit 90mm', 'Mecar HE', 45, 320);
+INSERT INTO Firing VALUES('KwK 42 L/70 75mm', 'Pzgr 39 L AP', 150, 135);
+INSERT INTO Firing VALUES('KwK 42 L/70 75mm', 'Pzgr 40 L APCR', 194, 135);
+INSERT INTO Firing VALUES('KwK 42 L/70 75mm', 'Sprgr 18 L HE', 38, 175);
+INSERT INTO Firing VALUES('KwK L/100 75mm', 'Pzgr 39 L AP', 198, 135);
+INSERT INTO Firing VALUES('KwK L/100 75mm', 'Pzgr 40 L APCR', 244, 135);
+INSERT INTO Firing VALUES('KwK L/100 75mm', 'Sprgr 18 L HE', 38, 175);
+INSERT INTO Firing VALUES('KwK L/28 105mm', 'Pzgr 39 K AP', 64, 350);
+INSERT INTO Firing VALUES('KwK L/28 105mm', 'Gr 39 H1A HEAT', 104, 350);
+INSERT INTO Firing VALUES('KwK L/28 105mm', 'Sprgr K HE', 53, 410);
+INSERT INTO Firing VALUES('KwK 40 L/48 75mm', 'Pzgr 39 AP', 110, 110);
+INSERT INTO Firing VALUES('KwK 40 L/48 75mm', 'Pzgr 40 APCR', 158, 110);
+INSERT INTO Firing VALUES('KwK 40 L/48 75mm', 'Sprgr 18 HE', 38, 175);
+INSERT INTO Firing VALUES('KwK 36 L/56 88mm', 'Pzgr 39 AP', 145, 220);
+INSERT INTO Firing VALUES('KwK 36 L/56 88mm', 'Pzgr 40 APCR', 171, 220);
+INSERT INTO Firing VALUES('KwK 36 L/56 88mm', 'Sprgr 18 HE', 44, 270);
+INSERT INTO Firing VALUES('KwK 43 L/71 88mm', 'Pzgr 39/43 AP', 203, 240);
+INSERT INTO Firing VALUES('KwK 43 L/71 88mm', 'Pzgr 40/43 APCR', 237, 240);
+INSERT INTO Firing VALUES('KwK 43 L/71 88mm', 'Sprgr 43 HE', 44, 295);
+INSERT INTO Firing VALUES('Kanone 18 105mm', 'PzGr rot AP', 169, 300);
+INSERT INTO Firing VALUES('Kanone 18 105mm', 'PzGr 40 rot APCR', 227, 300);
+INSERT INTO Firing VALUES('Kanone 18 105mm', 'Gr 19 HE', 53, 380);
+INSERT INTO Firing VALUES('Kanone 40 128mm', 'Pzgr Nr 4 AP', 231, 490);
+INSERT INTO Firing VALUES('Kanone 40 128mm', 'Sprgr Nr 9 HE', 65, 630);
+INSERT INTO Firing VALUES('Pak 42 L/70 75mm', 'Pzgr 39 L AP', 150, 135);
+INSERT INTO Firing VALUES('Pak 42 L/70 75mm', 'Pzgr 40 L APCR', 194, 135);
+INSERT INTO Firing VALUES('Pak 42 L/70 75mm', 'Sprgr 18 L HE',38, 175);
+INSERT INTO Firing VALUES('Pak L/56 88mm', 'Pzgr 39 AP', 145, 220);
+INSERT INTO Firing VALUES('Pak L/56 88mm', 'Pzgr 40 APCR', 171, 220);
+INSERT INTO Firing VALUES('Pak L/56 88mm', 'Sprgr 18 HE', 44, 270);
+INSERT INTO Firing VALUES('Pak 43 L/71 88mm', 'Pzgr 39/43 AP', 203, 240);
+INSERT INTO Firing VALUES('Pak 43 L/71 88mm', 'Pzgr 40/43 APCR', 237, 240);
+INSERT INTO Firing VALUES('Pak 43 L/71 88mm', 'Sprgr 43 HE', 44, 295);
+INSERT INTO Firing VALUES('Pak L/52 105mm', 'Pzgr 39 105 AP', 200, 320);
+INSERT INTO Firing VALUES('Pak L/52 105mm', 'Pzgr 40 105 APCR', 244, 320);
+INSERT INTO Firing VALUES('Pak L/52 105mm', 'Sprgr 18 105 HE', 60, 420);
+INSERT INTO Firing VALUES('sFH 18 L/29.5 150mm', 'Sprgr G HE', 85, 950);
+INSERT INTO Firing VALUES('sFH 18 L/29.5 150mm', 'Gr 39 H1A G HEAT', 185, 750);
+INSERT INTO Firing VALUES('sFH 43 150mm', 'Sprgr G 31 HE', 88, 1200);
+INSERT INTO Firing VALUES('sFH 43 150mm', 'Gr 39H2A G HEAT', 240, 900);
+INSERT INTO Firing VALUES('sFH 43 150mm', 'Sprgr 36 HE', 88, 1200);
+--Firing-USA
+INSERT INTO Firing VALUES('M1A2 76mm', 'M62 AP', 128, 115);
+INSERT INTO Firing VALUES('M1A2 76mm', 'HVAP M93 APCR', 177, 115);
+INSERT INTO Firing VALUES('M1A2 76mm', 'M42A1 HE', 38, 185);
+INSERT INTO Firing VALUES('T185 76mm', 'HVAP-DS-T M331A2 APCR', 175, 150);
+INSERT INTO Firing VALUES('T185 76mm', 'T M496 HEAT', 210, 150);
+INSERT INTO Firing VALUES('T185 76mm', 'M352 HE', 38, 185);
+INSERT INTO Firing VALUES('T91 76mm', 'M339 AP', 150, 115);
+INSERT INTO Firing VALUES('T91 76mm', 'HVAP M319 APCR', 199, 115);
+INSERT INTO Firing VALUES('T91 76mm', 'M352 HE', 38, 185);
+INSERT INTO Firing VALUES('M32 76mm', 'HVAP-DS-T M331A2 APCR', 175, 150);
+INSERT INTO Firing VALUES('M32 76mm', 'T M496 HEAT', 210, 150);
+INSERT INTO Firing VALUES('M32 76mm', 'M352 HE', 38, 185);
+INSERT INTO Firing VALUES('M32 late 76mm', 'HVAP-DS-T M331A2 APCR', 175, 150);
+INSERT INTO Firing VALUES('M32 late 76mm', 'T M496 HEAT', 210, 150);
+INSERT INTO Firing VALUES('M32 late 76mm', 'M352 HE', 38, 185);
+INSERT INTO Firing VALUES('M1A1 76mm', 'M62 AP', 128, 115);
+INSERT INTO Firing VALUES('M1A1 76mm', 'HVAP M93 APCR', 177, 115);
+INSERT INTO Firing VALUES('M1A1 76mm', 'M42A1 HE', 38, 185);
+INSERT INTO Firing VALUES('M3 90mm', 'M77 AP', 160, 240);
+INSERT INTO Firing VALUES('M3 90mm', 'HVAP M304 APCR', 243, 240);
+INSERT INTO Firing VALUES('M3 90mm', 'M71 HE', 45, 320);
+INSERT INTO Firing VALUES('M4 105mm', 'M1 HE', 53, 410);
+INSERT INTO Firing VALUES('M4 105mm', 'M67 HEAT', 101, 350);
+INSERT INTO Firing VALUES('T5E1 105mm', 'T32 AP', 198, 320);
+INSERT INTO Firing VALUES('T5E1 105mm', 'T29E3 APCR', 245, 320);
+INSERT INTO Firing VALUES('T5E1 105mm', 'M11 HE', 53, 420);
+INSERT INTO Firing VALUES('AT M3 90mm', 'M77 AP', 160, 240);
+INSERT INTO Firing VALUES('AT M3 90mm', 'HVAP M304 APCR', 243, 240);
+INSERT INTO Firing VALUES('AT M3 90mm', 'M71 HE', 45, 320);
+INSERT INTO Firing VALUES('AT T15E2 90mm', 'M77 AP', 170, 240);
+INSERT INTO Firing VALUES('AT T15E2 90mm', 'HVAP M304 APCR', 258, 240);
+INSERT INTO Firing VALUES('AT T15E2 90mm', 'M71 HE', 45, 320);
+INSERT INTO Firing VALUES('AT T5E1 105mm', 'T32 AP', 198, 320);
+INSERT INTO Firing VALUES('AT T5E1 105mm', 'T29E3 APCR', 245, 320);
+INSERT INTO Firing VALUES('AT T5E1 105mm', 'M11 HE', 53, 420);
+INSERT INTO Firing VALUES('M1918M1 155mm', 'M101 HE', 85, 950);
+INSERT INTO Firing VALUES('M1918M1 155mm', 'M101M2 HE', 90, 950);
+INSERT INTO Firing VALUES('M1 155mm', 'M101M4 HE', 88, 1250);
+INSERT INTO Firing VALUES('M1 155mm', 'M101M6 HE', 90, 1250);
+--Firing-France
+INSERT INTO Firing VALUES('SA49 75mm', 'Prf mle 1926 AP', 108, 110);
+INSERT INTO Firing VALUES('SA49 75mm', 'Frt Prf mle 1940 APCR', 148, 110);
+INSERT INTO Firing VALUES('SA49 75mm', 'OE mle 1915 HE', 38, 175);
+INSERT INTO Firing VALUES('SA50 75mm', 'Prf mle 1930 AP', 144, 135);
+INSERT INTO Firing VALUES('SA50 75mm', 'Frt Prf mle 1944 75 APCR', 202, 135);
+INSERT INTO Firing VALUES('SA50 75mm', 'OE mle 1915 HE', 38, 135);
+INSERT INTO Firing VALUES('DCA 30 90mm', 'Prf mle 1941 AP', 135, 240);
+INSERT INTO Firing VALUES('DCA 30 90mm', 'Frt Prf mle 1944 90 APCR', 175, 240);
+INSERT INTO Firing VALUES('DCA 30 90mm', 'OE mle 1924 HE', 45, 320);
+INSERT INTO Firing VALUES('F3 90mm', 'Prf mle 1941 AP', 170, 240);
+INSERT INTO Firing VALUES('F3 90mm', 'Frt Prf mle 1944 90 APCR', 248, 240);
+INSERT INTO Firing VALUES('F3 90mm', 'OE mle 1924 HE', 45, 320);
+INSERT INTO Firing VALUES('Canon 13TR 105mm', 'Prf mle 1940 105 AP', 165, 300);
+INSERT INTO Firing VALUES('Canon 13TR 105mm', 'Frt Prf mle 1943 APCR', 223, 330);
+INSERT INTO Firing VALUES('Canon 13TR 105mm', 'OE mle 1924 105 HE', 54, 360);
+INSERT INTO Firing VALUES('DCA 45 90mm', 'Prf mle 1941 AP', 212, 240);
+INSERT INTO Firing VALUES('DCA 45 90mm', 'Frt Prf mle 1944 90 APCR', 259, 240);
+INSERT INTO Firing VALUES('DCA 45 90mm', 'OE mle 1924 HE', 45, 320);
+INSERT INTO Firing VALUES('SA47 100mm', 'Prf mle 1940 100 AP', 232, 300);
+INSERT INTO Firing VALUES('SA47 100mm', 'Frt Prf mle 1945 APCR', 263, 300);
+INSERT INTO Firing VALUES('SA47 100mm', 'OE mle 1930 HE', 50, 400);
+INSERT INTO Firing VALUES('de 33 155mm', 'OE mle 1956 HE', 90, 950);
+INSERT INTO Firing VALUES('de 33 155mm', 'OCO mle 1944 HEAT', 185, 720);
+INSERT INTO Firing VALUES('mle 1950 155mm', 'OE mle 1956 HE', 90, 950);
+INSERT INTO Firing VALUES('mle 1950 155mm', 'M107 HE', 90, 950);
+INSERT INTO Firing VALUES('mle 1950 155mm', 'OCO mle 1944 HEAT', 185, 720);
+--Firing-United Kingdom
+INSERT INTO Firing VALUES('Mk V 75mm', 'Mk 1 AP', 91, 110);
+INSERT INTO Firing VALUES('Mk V 75mm', 'Mk 3 APCR', 144, 110);
+INSERT INTO Firing VALUES('Mk V 75mm', 'Mk 2 HE', 38, 175);
+INSERT INTO Firing VALUES('Howitzer 94mm', 'Mk 3 HE', 47, 370);
+INSERT INTO Firing VALUES('Howitzer 94mm', 'MK 1 HEAT', 110, 280);
+INSERT INTO Firing VALUES('Vickers HV 75mm', 'HV Mk 1 AP', 145, 135);
+INSERT INTO Firing VALUES('Vickers HV 75mm', 'HV Mk 3 APCR', 202, 135);
+INSERT INTO Firing VALUES('Vickers HV 75mm', 'HV Mk 2 HE', 38, 175);
+INSERT INTO Firing VALUES('OQF MK II 77mm', 'Mk 8T AP', 143, 150);
+INSERT INTO Firing VALUES('OQF MK II 77mm', 'Mk 1T77 APCR', 171, 150);
+INSERT INTO Firing VALUES('OQF MK II 77mm', 'Mk 1T77 HE', 38, 190);
+INSERT INTO Firing VALUES('OQF MK VII 77mm', '17-Pr Mk 9T AP', 171, 150);
+INSERT INTO Firing VALUES('OQF MK VII 77mm', '17-Pr Mk 1T APCR', 239, 190);
+INSERT INTO Firing VALUES('OQF MK VII 77mm', '17-Pr Mk 2T HE', 38, 190);
+INSERT INTO Firing VALUES('QF AT MK V 57mm', 'Mk 1T AP', 110, 75);
+INSERT INTO Firing VALUES('QF AT MK V 57mm', 'Mk 1T APCR', 180, 75);
+INSERT INTO Firing VALUES('QF AT MK V 57mm', 'Mk 10T HE', 30, 100);
+INSERT INTO Firing VALUES('OQF AT MK II 77mm', '17-Pr Mk 6T AP', 148, 140);
+INSERT INTO Firing VALUES('OQF AT MK II 77mm', '17-Pr Mk 8T AP', 208, 140);
+INSERT INTO Firing VALUES('OQF AT MK II 77mm', '17-Pr Mk 1T HE', 38, 190);
+INSERT INTO Firing VALUES('OQF AT MK VII 77mm', '17-Pr Mk 9T AP', 171, 150);
+INSERT INTO Firing VALUES('OQF AT MK VII 77mm', '17-Pr Mk 1T APCR', 239, 150);
+INSERT INTO Firing VALUES('OQF AT MK VII 77mm', '17-Pr Mk 2T HE', 38, 190);
+INSERT INTO Firing VALUES('OQF AT Barrel 84mm', 'Mk 1 84 AP', 226, 230);
+INSERT INTO Firing VALUES('OQF AT Barrel 84mm', 'Mk 2 84 APCR', 258, 230);
+INSERT INTO Firing VALUES('OQF AT Barrel 84mm', 'Mk 3 84 HE', 42, 280);
+INSERT INTO Firing VALUES('QF Howitzer 115mm', 'Mk XIII HE', 57, 450);
+INSERT INTO Firing VALUES('BL Gun 140mm', '80-lb Mk 3 HE', 70, 900 );
+INSERT INTO Firing VALUES('BL Gun 140mm', '80-lb Mk 4 HE', 75, 900);
+--Firing-China
+INSERT INTO Firing VALUES('54-76TG 76mm', 'Chuan dun-350 AP', 85, 115);
+INSERT INTO Firing VALUES('54-76TG 76mm', 'Chuan jian-350 APCR', 106, 115);
+INSERT INTO Firing VALUES('54-76TG 76mm', 'Sha bao-350 HE', 38, 165);
+INSERT INTO Firing VALUES('56-85JT 85mm', 'Chuan jian-365 AP', 128, 160);
+INSERT INTO Firing VALUES('56-85JT 85mm', 'Chuan chao-367 APCR', 172, 160);
+INSERT INTO Firing VALUES('56-85JT 85mm', 'Sha bao-365 HE', 43, 280);
+INSERT INTO Firing VALUES('62-85T 85mm', 'Chuan bei-367 AP', 145, 180);
+INSERT INTO Firing VALUES('62-85T 85mm', 'Po-365 HEAT', 220, 180);
+INSERT INTO Firing VALUES('62-85T 85mm', 'Sha bao-367 HE', 43, 300);
+INSERT INTO Firing VALUES('64-85T 85mm', 'Chuan bei-367G AP', 159, 200);
+INSERT INTO Firing VALUES('64-85T 85mm', 'Po-367 HEAT', 230, 200);
+INSERT INTO Firing VALUES('64-85T 85mm', 'Sha bao-367G HE', 43, 320);
+INSERT INTO Firing VALUES('59-100T 100mm', 'Chuan bei-412 AP', 181, 250);
+INSERT INTO Firing VALUES('59-100T 100mm', 'Chuan chao-412 APCR', 241, 250);
+INSERT INTO Firing VALUES('59-100T 100mm', 'Sha bao-412 HE', 50, 330);
+INSERT INTO Firing VALUES('S-53 85mm', 'Chuan jian-365 AP', 126, 160);
+INSERT INTO Firing VALUES('S-53 85mm', 'Chuan chao-367 APCR', 167, 160);
+INSERT INTO Firing VALUES('S-53 85mm', 'Sha bao-365 HE', 43, 280);
+INSERT INTO Firing VALUES('44-100JT 100mm', 'Chuan bei-412 AP', 175, 250);
+INSERT INTO Firing VALUES('44-100JT 100mm', 'Chuan chao-412 APCR', 235, 250);
+INSERT INTO Firing VALUES('44-100JT 100mm', 'Sha bao-412 HE', 50, 330);
+INSERT INTO Firing VALUES('37-122JT 122mm', 'Chuan bei-471 AP', 175, 390);
+INSERT INTO Firing VALUES('37-122JT 122mm', 'Po-471 HEAT', 250, 390);
+INSERT INTO Firing VALUES('37-122JT 122mm', 'Sha bao-471 HE', 61, 530);
+--Firing-Japan
+INSERT INTO Firing VALUES('Type 5 75mm', 'Type 1 604R AP', 124, 125);
+INSERT INTO Firing VALUES('Type 5 75mm', 'Type 1 Toku Kou 604R AP', 155, 125);
+INSERT INTO Firing VALUES('Type 5 75mm', 'Type 4 604R HE', 38, 175);
+INSERT INTO Firing VALUES('Type 5 Model I 75mm', 'Type 1 Toku Kou Kai AP', 155, 130);
+INSERT INTO Firing VALUES('Type 5 Model I 75mm', 'Type 1 Toku Otsu AP', 186, 130);
+INSERT INTO Firing VALUES('Type 5 Model I 75mm', 'Type 4 Kai HE', 38, 175);
+INSERT INTO Firing VALUES('Type 5 Auto 75mm', 'Type 1 Toku Kou Kai AP', 155, 130);
+INSERT INTO Firing VALUES('Type 5 Auto 75mm', 'Type 1 Toku Otsu AP', 186, 130);
+INSERT INTO Firing VALUES('Type 5 Auto 75mm', 'Type 4 Kai HE', 38, 175);
+INSERT INTO Firing VALUES('Type 92 100mm', 'Type 95 AP', 175, 300);
+INSERT INTO Firing VALUES('Type 92 100mm', 'Type 95 Toku Kou AP', 201, 300);
+INSERT INTO Firing VALUES('Type 92 100mm', 'Type 92 HE', 53, 360);
+INSERT INTO Firing VALUES('Experimental 100mm', 'Experimental Type 2 AP', 190, 330);
+INSERT INTO Firing VALUES('Experimental 100mm', 'Type 2 Toku Kou AP', 215, 330);
+INSERT INTO Firing VALUES('Experimental 100mm', 'Type 91 HE', 53, 430);
+INSERT INTO Firing VALUES('Type 96 150mm', 'Type 1 AP', 121, 700);
+INSERT INTO Firing VALUES('Type 96 150mm', 'Type 3 HEAT', 150, 700);
+INSERT INTO Firing VALUES('Type 96 150mm', 'Type 96 HE', 75, 910);
+--Firing-Czech
+INSERT INTO Firing VALUES('VZ 44S 85mm', 'Vz 44 AP', 126, 160);
+INSERT INTO Firing VALUES('VZ 44S 85mm', 'Vz 44 PJ AP', 167, 160);
+INSERT INTO Firing VALUES('VZ 44S 85mm', 'Vz 44 N HE', 43, 280);
+INSERT INTO Firing VALUES('VZ 44S 100mm', 'JPSv AP', 175, 250);
+INSERT INTO Firing VALUES('VZ 44S 100mm', 'JPrSv APCR', 250, 250);
+INSERT INTO Firing VALUES('VZ 44S 100mm', 'JOF HE', 50, 330);
+
+
